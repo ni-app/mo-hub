@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สมุดบันทึกรายรับ-รายจ่าย | Study Desk Ledger</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Caveat & Kalam (Handwriting), Prompt & Sarabun (Thai + Clean Sans) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Kalam:wght@400;700&family=Prompt:wght@300;400;500;600&family=Sriracha&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js for Sketchy/Clean Graph -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --paper-bg: #fcfbf7;
+            --line-blue: #e5e7eb;
+            --margin-red: #fca5a5;
+            --sticky-yellow: #fef9c3;
+            --sticky-pink: #fce7f3;
+            --sticky-mint: #dcfce7;
+            --sticky-blue: #e0f2fe;
+            --ink-dark: #2c3539;
+            --ink-muted: #64748b;
+        }
+
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #e6dfd3; /* Cozy wooden/desk mat background */
+            background-image: radial-gradient(#d5ccb8 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--ink-dark);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Handwritten Font Classes */
+        .font-hand {
+            font-family: 'Caveat', 'Sriracha', cursive;
+        }
+        .font-kalam {
+            font-family: 'Kalam', 'Sriracha', cursive;
+        }
+
+        /* Authentic Ruled Lined Paper with Pink Margin */
+        .notebook-paper {
+            background-color: var(--paper-bg);
+            background-image: 
+                linear-gradient(90deg, transparent 54px, var(--margin-red) 54px, var(--margin-red) 56px, transparent 56px),
+                linear-gradient(var(--line-blue) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 32px;
+            background-position: 0 0, 0 24px;
+            box-shadow: 
+                0 1px 1px rgba(0,0,0,0.08), 
+                0 10px 0 -5px #f4f1ea, 
+                0 10px 1px -4px rgba(0,0,0,0.08), 
+                0 20px 0 -10px #ebe6dc, 
+                0 20px 1px -9px rgba(0,0,0,0.08),
+                0 25px 35px -5px rgba(44, 53, 57, 0.15);
+            position: relative;
+        }
+
+        /* Mobile adjustment for margin line */
+        @media (max-width: 640px) {
+            .notebook-paper {
+                background-image: 
+                    linear-gradient(90deg, transparent 24px, var(--margin-red) 24px, var(--margin-red) 25.5px, transparent 25.5px),
+                    linear-gradient(var(--line-blue) 1px, transparent 1px);
+            }
+        }
+
+        /* Graph Grid Paper Texture (for Chart / Summary Cards) */
+        .graph-paper {
+            background-color: #ffffff;
+            background-image: 
+                linear-gradient(to right, rgba(203, 213, 225, 0.35) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(203, 213, 225, 0.35) 1px, transparent 1px);
+            background-size: 16px 16px;
+        }
+
+        /* Spiral Binder Rings on Left Edge */
+        .spiral-holes {
+            position: absolute;
+            left: 14px;
+            top: 28px;
+            bottom: 28px;
+            width: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .spiral-hole {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #d6cec0;
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.25), 0 1px 0 rgba(255,255,255,0.8);
+            position: relative;
+        }
+        .spiral-hole::after {
+            content: '';
+            position: absolute;
+            left: -18px;
+            top: 4px;
+            width: 24px;
+            height: 6px;
+            background: linear-gradient(180deg, #94a3b8 0%, #475569 50%, #1e293b 100%);
+            border-radius: 4px;
+            transform: rotate(-8deg);
+            box-shadow: 0 2px 3px rgba(0,0,0,0.3);
+        }
+
+        /* Washi Tape Elements */
+        .washi-tape {
+            position: absolute;
+            height: 26px;
+            width: 95px;
+            opacity: 0.88;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+            z-index: 20;
+            pointer-events: none;
+            backdrop-filter: blur(1px);
+        }
+        .washi-pink {
+            background: repeating-linear-gradient(
+                45deg,
+                rgba(251, 207, 232, 0.85),
+                rgba(251, 207, 232, 0.85) 8px,
+                rgba(244, 114, 182, 0.35) 8px,
+                rgba(244, 114, 182, 0.35) 16px
+            );
+            border-left: 2px dashed rgba(255,255,255,0.6);
+            border-right: 2px dashed rgba(255,255,255,0.6);
+        }
+        .washi-mint {
+            background: repeating-linear-gradient(
+                -45deg,
+                rgba(187, 247, 208, 0.85),
+                rgba(187, 247, 208, 0.85) 6px,
+                rgba(74, 222, 128, 0.35) 6px,
+                rgba(74, 222, 128, 0.35) 12px
+            );
+            border-left: 2px dashed rgba(255,255,255,0.6);
+            border-right: 2px dashed rgba(255,255,255,0.6);
+        }
+        .washi-yellow {
+            background: rgba(253, 224, 71, 0.65);
+            background-image: radial-gradient(rgba(234, 179, 8, 0.4) 1.5px, transparent 1.5px);
+            background-size: 8px 8px;
+            border-left: 2px dashed rgba(255,255,255,0.7);
+            border-right: 2px dashed rgba(255,255,255,0.7);
+        }
+
+        /* Sticky Note Styles */
+        .sticky-note {
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+            box-shadow: 2px 4px 10px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0,0,0,0.06);
+            position: relative;
+        }
+        .sticky-note:hover {
+            transform: translateY(-3px) rotate(0deg) !important;
+            box-shadow: 4px 8px 16px rgba(0, 0, 0, 0.12);
+            z-index: 15;
+        }
+        /* Folded bottom-right corner effect */
+        .sticky-note::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            border-width: 0 0 16px 16px;
+            border-style: solid;
+            border-color: transparent transparent rgba(0,0,0,0.06) transparent;
+            border-bottom-right-radius: 2px;
+        }
+
+        /* Highlighter Marker Effect */
+        .highlight-yellow {
+            background: linear-gradient(104deg, rgba(254, 240, 138, 0) 0.9%, rgba(254, 240, 138, 1) 2.4%, rgba(254, 240, 138, 0.5) 5.8%, rgba(254, 240, 138, 0.9) 93%, rgba(254, 240, 138, 0.7) 96%, rgba(254, 240, 138, 0) 98%);
+            padding: 0 6px;
+            border-radius: 4px;
+        }
+        .highlight-pink {
+            background: linear-gradient(104deg, rgba(251, 207, 232, 0) 0.9%, rgba(251, 207, 232, 1) 2.4%, rgba(251, 207, 232, 0.6) 5.8%, rgba(251, 207, 232, 0.9) 93%, rgba(251, 207, 232, 0.7) 96%, rgba(251, 207, 232, 0) 98%);
+            padding: 0 6px;
+            border-radius: 4px;
+        }
+
+        /* Handwritten Underline */
+        .sketch-underline {
+            border-bottom: 2px dashed #94a3b8;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1ede4;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Stamp Badge Animation */
+        @keyframes stampIn {
+            0% { transform: scale(1.6) rotate(-15deg); opacity: 0; }
+            70% { transform: scale(0.95) rotate(-4deg); opacity: 1; }
+            100% { transform: scale(1) rotate(-6deg); opacity: 1; }
+        }
+        .stamp-badge {
+            animation: stampIn 0.4s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="py-4 px-2 sm:py-8 sm:px-6 lg:px-8 flex justify-center items-start">
+
+    <!-- Toast Notification (Replaces alert) -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Main Notebook Sheet Container -->
+    <main class="notebook-paper w-full max-w-5xl rounded-r-2xl rounded-l-md pt-8 pb-12 pl-10 pr-5 sm:pl-20 sm:pr-10 transition-all">
+        
+        <!-- Decorative Top-Left & Top-Right Washi Tape -->
+        <div class="washi-tape washi-pink -top-3 left-8 sm:left-16 -rotate-6 rounded-sm"></div>
+        <div class="washi-tape washi-mint -top-3 right-8 sm:right-14 rotate-6 rounded-sm"></div>
+
+        <!-- Spiral Notebook Rings (Hidden on very small screens to save space) -->
+        <div class="spiral-holes hidden sm:flex" aria-hidden="true">
+            <div class="spiral-hole"></div>
+            <div class="spiral-hole"></div>
+            <div class="spiral-hole"></div>
+            <div class="spiral-hole"></div>
+            <div class="spiral-hole"></div>
+            <div class="spiral-hole"></div>
+            <div class="spiral-hole"></div>
+            <div class="spiral-hole"></div>
+            <div class="spiral-hole"></div>
+            <div class="spiral-hole"></div>
+            <div class="spiral-hole"></div>
+            <div class="spiral-hole"></div>
+        </div>
+
+        <!-- Header Section: Notebook Title & Date Stamp -->
+        <header class="flex flex-col md:flex-row md:items-end justify-between border-b-2 border-slate-300 pb-4 mb-8 gap-4">
+            <div>
+                <div class="flex items-center gap-2 text-slate-500 font-hand text-xl sm:text-2xl">
+                    <span>📓 Study Desk Ledger</span>
+                    <span>•</span>
+                    <span id="current-date-display" class="text-rose-500 font-bold"></span>
+                </div>
+                <h1 class="text-2xl sm:text-4xl font-bold text-slate-800 tracking-tight mt-1 flex items-center gap-2 flex-wrap">
+                    <span>สมุดบันทึก</span>
+                    <span class="highlight-yellow">รายรับ - รายจ่าย</span>
+                    <span class="font-hand text-2xl sm:text-3xl text-slate-500 font-normal">(My Pocket Note)</span>
+                </h1>
+            </div>
+
+            <!-- Month Filter & Quick Reset -->
+            <div class="flex items-center gap-3 self-start md:self-end">
+                <div class="bg-white/90 border-2 border-slate-300 rounded-xl px-3 py-1.5 shadow-sm flex items-center gap-2">
+                    <i data-lucide="calendar" class="w-4 h-4 text-rose-400"></i>
+                    <select id="month-filter" class="bg-transparent text-sm font-medium text-slate-700 focus:outline-none cursor-pointer">
+                        <option value="ALL">ทุกช่วงเวลา (All Notes)</option>
+                    </select>
+                </div>
+                <button onclick="openResetModal()" title="ล้างข้อมูลทั้งหมด" class="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-500 border border-rose-200 transition shadow-sm" aria-label="Reset Data">
+                    <i data-lucide="eraser" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Sticky Notes Summary Row -->
+        <section aria-label="Financial Summary" class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-10">
+            <!-- Sticky Note 1: Total Balance (Yellow #fef9c3) -->
+            <div class="sticky-note rounded-lg p-5 -rotate-1" style="background-color: #fef9c3; border: 1px solid #fde047;">
+                <div class="washi-tape washi-yellow -top-3 left-1/2 -translate-x-1/2 w-16 h-5 opacity-75"></div>
+                <div class="flex items-center justify-between mb-1">
+                    <span class="font-hand text-2xl font-bold text-amber-800">✨ ยอดเงินคงเหลือ (Balance)</span>
+                    <span class="p-1.5 bg-amber-200/60 rounded-full text-amber-800">
+                        <i data-lucide="wallet" class="w-4 h-4"></i>
+                    </span>
+                </div>
+                <p id="total-balance" class="text-2xl sm:text-3xl font-bold text-slate-800 mt-2 tracking-tight">฿0.00</p>
+                <p id="balance-note" class="font-hand text-lg text-amber-900/80 mt-1">จดบันทึกทุกวัน มีเงินออมแน่นอน!</p>
+            </div>
+
+            <!-- Sticky Note 2: Total Income (Mint Green) -->
+            <div class="sticky-note rounded-lg p-5 rotate-1" style="background-color: #dcfce7; border: 1px solid #86efac;">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="font-hand text-2xl font-bold text-emerald-800">🌱 รายรับทั้งหมด (Income)</span>
+                    <span class="p-1.5 bg-emerald-200/70 rounded-full text-emerald-800">
+                        <i data-lucide="trending-up" class="w-4 h-4"></i>
+                    </span>
+                </div>
+                <p id="total-income" class="text-2xl sm:text-3xl font-bold text-emerald-700 mt-2 tracking-tight">+฿0.00</p>
+                <p id="income-count" class="font-hand text-lg text-emerald-900/75 mt-1">0 รายการรับเข้า</p>
+            </div>
+
+            <!-- Sticky Note 3: Total Expense (Pink #fce7f3) -->
+            <div class="sticky-note rounded-lg p-5 -rotate-1" style="background-color: #fce7f3; border: 1px solid #f9a8d4;">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="font-hand text-2xl font-bold text-rose-800">🍓 รายจ่ายทั้งหมด (Expense)</span>
+                    <span class="p-1.5 bg-rose-200/70 rounded-full text-rose-800">
+                        <i data-lucide="trending-down" class="w-4 h-4"></i>
+                    </span>
+                </div>
+                <p id="total-expense" class="text-2xl sm:text-3xl font-bold text-rose-600 mt-2 tracking-tight">-฿0.00</p>
+                <p id="expense-count" class="font-hand text-lg text-rose-900/75 mt-1">0 รายการใช้จ่าย</p>
+            </div>
+        </section>
+
+        <!-- Two-Column Workspace: Left = Add Entry Form (Index Card), Right = Graph Grid Overview -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-10 items-start">
+            
+            <!-- Left Column (7 cols): Add New Entry Form styled like an Index Card -->
+            <section class="lg:col-span-7 bg-white/95 rounded-2xl p-6 border-2 border-slate-200 shadow-sm relative">
+                <!-- Decorative Washi Tape -->
+                <div class="washi-tape washi-pink -top-3 right-6 rotate-3 w-20 h-5"></div>
+
+                <div class="flex items-center justify-between mb-4 border-b border-dashed border-slate-300 pb-2">
+                    <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="pen-tool" class="w-5 h-5 text-indigo-500"></i>
+                        <span>จดรายการใหม่ (New Entry)</span>
+                    </h2>
+                    <span class="font-hand text-xl text-slate-500">เขียนให้ละเอียดนะ ✍️</span>
+                </div>
+
+                <form id="transaction-form" class="space-y-4">
+                    <!-- Type Toggle Pill -->
+                    <div class="grid grid-cols-2 gap-3 p-1.5 bg-slate-100 rounded-xl border border-slate-200">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="tx-type" value="expense" class="peer sr-only" checked>
+                            <div class="text-center py-2 px-3 rounded-lg font-medium text-sm text-slate-600 peer-checked:bg-rose-400 peer-checked:text-white peer-checked:shadow-sm transition flex items-center justify-center gap-1.5">
+                                <i data-lucide="minus-circle" class="w-4 h-4"></i>
+                                <span>รายจ่าย (Expense)</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="tx-type" value="income" class="peer sr-only">
+                            <div class="text-center py-2 px-3 rounded-lg font-medium text-sm text-slate-600 peer-checked:bg-emerald-500 peer-checked:text-white peer-checked:shadow-sm transition flex items-center justify-center gap-1.5">
+                                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                                <span>รายรับ (Income)</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Title & Amount -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="tx-title" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">รายการ (Description)</label>
+                            <input type="text" id="tx-title" required placeholder="เช่น ค่ากาแฟ, เงินเดือน, ค่าสมุด..."
+                                class="w-full px-3.5 py-2.5 bg-[#fcfbf7] border-b-2 border-slate-300 focus:border-indigo-500 rounded-t-lg text-sm text-slate-800 focus:outline-none transition">
+                        </div>
+                        <div>
+                            <label for="tx-amount" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">จำนวนเงิน (บาท)</label>
+                            <input type="number" id="tx-amount" required min="0.01" step="0.01" placeholder="0.00"
+                                class="w-full px-3.5 py-2.5 bg-[#fcfbf7] border-b-2 border-slate-300 focus:border-indigo-500 rounded-t-lg text-sm font-semibold text-slate-800 focus:outline-none transition">
+                        </div>
+                    </div>
+
+                    <!-- Category & Date -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="tx-category" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">หมวดหมู่ (Category)</label>
+                            <select id="tx-category" class="w-full px-3.5 py-2.5 bg-[#fcfbf7] border-b-2 border-slate-300 focus:border-indigo-500 rounded-t-lg text-sm text-slate-800 focus:outline-none cursor-pointer">
+                                <!-- Populated dynamically based on type -->
+                            </select>
+                        </div>
+                        <div>
+                            <label for="tx-date" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">วันที่ (Date)</label>
+                            <input type="date" id="tx-date" required
+                                class="w-full px-3.5 py-2.5 bg-[#fcfbf7] border-b-2 border-slate-300 focus:border-indigo-500 rounded-t-lg text-sm text-slate-800 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Handwritten Note / Annotation -->
+                    <div>
+                        <label for="tx-note" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">
+                            โน้ตเพิ่มเติม <span class="font-hand text-base text-slate-400 normal-case">(Handwritten Memo - ไม่บังคับ)</span>
+                        </label>
+                        <input type="text" id="tx-note" placeholder="เขียนช่วยจำสั้นๆ เช่น ซื้อกับเพื่อน, โปรโมชั่น 1 แถม 1..."
+                            class="w-full px-3.5 py-2 bg-[#fef9c3]/40 border border-dashed border-amber-300 rounded-xl font-hand text-xl text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-amber-400">
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 active:scale-[0.99] text-white font-medium rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                        <i data-lucide="bookmark-plus" class="w-4 h-4 text-amber-300"></i>
+                        <span>บันทึกลงสมุด (Pin to Notebook)</span>
+                    </button>
+                </form>
+            </section>
+
+            <!-- Right Column (5 cols): Graph Paper Chart & Study Tip -->
+            <section class="lg:col-span-5 flex flex-col gap-5">
+                <!-- Graph Grid Paper Card -->
+                <div class="graph-paper rounded-2xl p-5 border-2 border-slate-200 shadow-sm relative">
+                    <div class="washi-tape washi-mint -top-3 left-6 -rotate-3 w-20 h-5"></div>
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-base font-semibold text-slate-800 flex items-center gap-1.5">
+                            <i data-lucide="pie-chart" class="w-4 h-4 text-rose-400"></i>
+                            <span>สัดส่วนรายจ่าย (Graph Grid)</span>
+                        </h3>
+                        <span class="font-hand text-lg text-slate-500">สรุปภาพรวม</span>
+                    </div>
+
+                    <div class="relative h-48 w-full flex items-center justify-center">
+                        <canvas id="expenseChart"></canvas>
+                        <div id="empty-chart-msg" class="hidden text-center">
+                            <p class="font-hand text-2xl text-slate-400">ยังไม่มีข้อมูลรายจ่าย</p>
+                            <p class="text-xs text-slate-400">ลองเพิ่มรายการแรกทางซ้ายมือเลย!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mini Pastel Memo Card -->
+                <div class="rounded-xl p-4 border border-sky-200 relative rotate-1" style="background-color: #e0f2fe;">
+                    <div class="flex items-start gap-3">
+                        <span class="text-2xl">📌</span>
+                        <div>
+                            <h4 class="font-hand text-xl font-bold text-sky-900">Study Desk Tip!</h4>
+                            <p id="savings-tip" class="text-xs sm:text-sm text-sky-800 leading-relaxed mt-0.5">
+                                ลองตั้งเป้าหมายออมเงินอย่างน้อย 20% ของรายรับในแต่ละเดือน แล้วจดติ๊กถูกในสมุดทุกครั้งที่ทำได้นะ!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Ruled Notebook Ledger List Section -->
+        <section aria-label="Transaction History" class="mt-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-2 border-b-2 border-slate-300">
+                <div class="flex items-center gap-2">
+                    <h2 class="text-xl font-bold text-slate-800">รายการบันทึกในหน้ากระดาษ</h2>
+                    <span class="highlight-pink font-hand text-xl text-rose-900">Ledger Entries</span>
+                </div>
+
+                <!-- Filter Tabs -->
+                <div class="flex items-center gap-1.5 bg-white/80 p-1 rounded-xl border border-slate-200 self-start">
+                    <button onclick="setFilterType('all')" id="filter-all" class="filter-btn px-3 py-1 rounded-lg text-xs font-medium bg-slate-800 text-white transition">ทั้งหมด</button>
+                    <button onclick="setFilterType('income')" id="filter-income" class="filter-btn px-3 py-1 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 transition">รายรับ</button>
+                    <button onclick="setFilterType('expense')" id="filter-expense" class="filter-btn px-3 py-1 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-100 transition">รายจ่าย</button>
+                </div>
+            </div>
+
+            <!-- Search Input on Ruled Line -->
+            <div class="relative mb-5">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                <input type="text" id="search-input" placeholder="ค้นหารายการ หรือคำในโน้ต..."
+                    class="w-full pl-10 pr-4 py-2 bg-white/75 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-400 transition">
+            </div>
+
+            <!-- Entries List Container -->
+            <div id="transaction-list" class="space-y-3">
+                <!-- Items rendered via JS -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="hidden text-center py-12 px-4">
+                <div class="inline-block p-4 rounded-full bg-amber-100/70 text-amber-600 mb-3">
+                    <i data-lucide="book-open" class="w-8 h-8"></i>
+                </div>
+                <p class="font-hand text-3xl text-slate-600">หน้ากระดาษนี้ยังว่างอยู่เลย...</p>
+                <p class="text-sm text-slate-400 mt-1">เริ่มจดรายรับหรือรายจ่ายแรกของคุณด้านบนได้เลย!</p>
+            </div>
+        </section>
+
+        <!-- Footer Signature -->
+        <footer class="mt-12 pt-4 border-t border-dashed border-slate-300 flex flex-col sm:flex-row items-center justify-between text-slate-400 gap-2">
+            <span class="font-hand text-xl">Crafted with ☕ & ✏️ for cozy budgeting</span>
+            <span class="text-xs">ข้อมูลทั้งหมดถูกบันทึกอัตโนมัติในเบราว์เซอร์ของคุณ (Local Storage)</span>
+        </footer>
+    </main>
+
+    <!-- Custom Confirmation Modal for Resetting Data (No confirm() used) -->
+    <div id="reset-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="bg-[#fcfbf7] border-2 border-slate-300 rounded-2xl max-w-sm w-full p-6 shadow-xl relative">
+            <div class="washi-tape washi-pink -top-3 left-1/2 -translate-x-1/2 w-20 h-5"></div>
+            <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <i data-lucide="alert-circle" class="w-5 h-5 text-rose-500"></i>
+                <span>ลบรายการทั้งหมดในสมุด?</span>
+            </h3>
+            <p class="text-sm text-slate-600 mt-2">
+                การกระทำนี้จะลบประวัติรายรับ-รายจ่ายทั้งหมดและไม่สามารถกู้คืนได้ คุณแน่ใจหรือไม่?
+            </p>
+            <div class="flex justify-end gap-2 mt-6">
+                <button onclick="closeResetModal()" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-200/70 transition">ยกเลิก</button>
+                <button onclick="confirmResetData()" class="px-4 py-2 rounded-xl text-sm font-medium bg-rose-500 hover:bg-rose-600 text-white shadow-sm transition">ลบข้อมูลทั้งหมด</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Categories Configuration with Emoji & Color
+        const CATEGORIES = {
+            expense: [
+                { id: 'food', label: '🍱 อาหาร & เครื่องดื่ม', color: '#fb7185' },
+                { id: 'study', label: '📚 หนังสือ & เครื่องเขียน', color: '#60a5fa' },
+                { id: 'transport', label: '🚌 การเดินทาง', color: '#fbbf24' },
+                { id: 'shopping', label: '🛍️ ช้อปปิ้ง & ของใช้', color: '#c084fc' },
+                { id: 'bills', label: '💡 บิล & ค่าบริการ', color: '#34d399' },
+                { id: 'other_exp', label: '🧸 อื่นๆ', color: '#94a3b8' }
+            ],
+            income: [
+                { id: 'salary', label: '💼 เงินเดือน / ค่าจ้าง', color: '#10b981' },
+                { id: 'allowance', label: '💌 ค่าขนม / เงินโอน', color: '#3b82f6' },
+                { id: 'freelance', label: '💻 งานเสริม / ฟรีแลนซ์', color: '#8b5cf6' },
+                { id: 'gift', label: '🎁 โบนัส / ของขวัญ', color: '#f59e0b' },
+                { id: 'other_inc', label: '✨ รายรับอื่นๆ', color: '#64748b' }
+            ]
+        };
+
+        // Default Sample Data (Cozy Study Desk Vibe)
+        const DEFAULT_TRANSACTIONS = [
+            {
+                id: 'tx-1',
+                type: 'income',
+                title: 'ค่าขนมประจำเดือน',
+                amount: 8500,
+                category: 'allowance',
+                date: new Date().toISOString().split('T')[0],
+                note: 'คุณแม่โอนให้ + เก็บออม 1,500 บาท'
+            },
+            {
+                id: 'tx-2',
+                type: 'expense',
+                title: 'สมุดโน้ตกริด & ปากกาไฮไลท์',
+                amount: 245,
+                category: 'study',
+                date: new Date().toISOString().split('T')[0],
+                note: 'ซื้อเตรียมสอบปลายภาค สีพาสเทลน่ารักมาก!'
+            },
+            {
+                id: 'tx-3',
+                type: 'expense',
+                title: 'มัทฉะลาเต้เย็น & ครัวซองต์',
+                amount: 135,
+                category: 'food',
+                date: new Date().toISOString().split('T')[0],
+                note: 'นั่งอ่านหนังสือที่คาเฟ่หน้ามอ'
+            },
+            {
+                id: 'tx-4',
+                type: 'income',
+                title: 'รับวาดภาพประกอบโน้ตสรุป',
+                amount: 1200,
+                category: 'freelance',
+                date: new Date(Date.now() - 86400000 * 2).toISOString().split('T')[0],
+                note: 'ค่าขนมพิเศษจากการทำงานเสริม'
+            }
+        ];
+
+        // State Variables
+        let transactions = [];
+        let currentFilterType = 'all';
+        let currentMonthFilter = 'ALL';
+        let searchQuery = '';
+        let expenseChartInstance = null;
+
+        // DOM Elements
+        const form = document.getElementById('transaction-form');
+        const typeRadios = document.querySelectorAll('input[name="tx-type"]');
+        const categorySelect = document.getElementById('tx-category');
+        const dateInput = document.getElementById('tx-date');
+        const monthFilterSelect = document.getElementById('month-filter');
+        const searchInput = document.getElementById('search-input');
+
+        // Initialize Application
+        function initApp() {
+            // Set Today's Date in Header & Form
+            const today = new Date();
+            const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+            document.getElementById('current-date-display').textContent = today.toLocaleDateString('th-TH', options);
+            dateInput.value = today.toISOString().split('T')[0];
+
+            // Load from LocalStorage or use Sample Data
+            const saved = localStorage.getItem('notebook_ledger_txs');
+            if (saved) {
+                try {
+                    transactions = JSON.parse(saved);
+                } catch (e) {
+                    transactions = [...DEFAULT_TRANSACTIONS];
+                }
+            } else {
+                transactions = [...DEFAULT_TRANSACTIONS];
+                saveTransactions();
+            }
+
+            // Populate initial category dropdown
+            updateCategoryDropdown('expense');
+
+            // Event Listeners
+            typeRadios.forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    updateCategoryDropdown(e.target.value);
+                });
+            });
+
+            form.addEventListener('submit', handleAddTransaction);
+            monthFilterSelect.addEventListener('change', (e) => {
+                currentMonthFilter = e.target.value;
+                renderAll();
+            });
+            searchInput.addEventListener('input', (e) => {
+                searchQuery = e.target.value.trim().toLowerCase();
+                renderTransactionList();
+            });
+
+            updateMonthDropdown();
+            renderAll();
+        }
+
+        // Save to LocalStorage
+        function saveTransactions() {
+            localStorage.setItem('notebook_ledger_txs', JSON.stringify(transactions));
+        }
+
+        // Update Category Select based on Income/Expense
+        function updateCategoryDropdown(type) {
+            const list = CATEGORIES[type] || [];
+            categorySelect.innerHTML = list.map(cat => 
+                `<option value="${cat.id}">${cat.label}</option>`
+            ).join('');
+        }
+
+        // Find Category Details
+        function getCategoryInfo(type, catId) {
+            const list = CATEGORIES[type] || [];
+            return list.find(c => c.id === catId) || { label: '📝 ทั่วไป', color: '#94a3b8' };
+        }
+
+        // Handle Form Submission
+        function handleAddTransaction(e) {
+            e.preventDefault();
+            const type = document.querySelector('input[name="tx-type"]:checked').value;
+            const title = document.getElementById('tx-title').value.trim();
+            const amount = parseFloat(document.getElementById('tx-amount').value);
+            const category = categorySelect.value;
+            const date = dateInput.value;
+            const note = document.getElementById('tx-note').value.trim();
+
+            if (!title || isNaN(amount) || amount <= 0 || !date) {
+                showToast('กรุณากรอกข้อมูลให้ครบถ้วนนะ ✏️', 'warning');
+                return;
+            }
+
+            const newTx = {
+                id: 'tx-' + Date.now(),
+                type,
+                title,
+                amount,
+                category,
+                date,
+                note
+            };
+
+            transactions.unshift(newTx);
+            saveTransactions();
+            updateMonthDropdown();
+            renderAll();
+
+            // Reset Form inputs (keep date & type)
+            document.getElementById('tx-title').value = '';
+            document.getElementById('tx-amount').value = '';
+            document.getElementById('tx-note').value = '';
+
+            showToast(
+                type === 'income' ? `บันทึกรายรับ +฿${formatMoney(amount)} เรียบร้อย! 🌱` : `บันทึกรายจ่าย -฿${formatMoney(amount)} เรียบร้อย! 📝`,
+                type === 'income' ? 'success' : 'info'
+            );
+        }
+
+        // Delete Transaction
+        function deleteTransaction(id) {
+            transactions = transactions.filter(tx => tx.id !== id);
+            saveTransactions();
+            updateMonthDropdown();
+            renderAll();
+            showToast('ลบรายการออกจากหน้ากระดาษแล้ว 🧹', 'info');
+        }
+
+        // Update Month Filter Options dynamically
+        function updateMonthDropdown() {
+            const months = new Set();
+            transactions.forEach(tx => {
+                if (tx.date && tx.date.length >= 7) {
+                    months.add(tx.date.substring(0, 7)); // YYYY-MM
+                }
+            });
+
+            const sortedMonths = Array.from(months).sort().reverse();
+            const previousVal = monthFilterSelect.value;
+
+            let html = `<option value="ALL">ทุกช่วงเวลา (All Notes)</option>`;
+            sortedMonths.forEach(ym => {
+                const [year, month] = ym.split('-');
+                const dateObj = new Date(parseInt(year), parseInt(month) - 1, 1);
+                const label = dateObj.toLocaleDateString('th-TH', { year: 'numeric', month: 'long' });
+                html += `<option value="${ym}">📅 ${label}</option>`;
+            });
+
+            monthFilterSelect.innerHTML = html;
+            if (sortedMonths.includes(previousVal)) {
+                monthFilterSelect.value = previousVal;
+            } else {
+                monthFilterSelect.value = 'ALL';
+                currentMonthFilter = 'ALL';
+            }
+        }
+
+        // Set Type Filter Tab
+        function setFilterType(type) {
+            currentFilterType = type;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('bg-slate-800', 'text-white');
+                btn.classList.add('text-slate-600', 'hover:bg-slate-100');
+            });
+            const activeBtn = document.getElementById(`filter-${type}`);
+            activeBtn.classList.remove('text-slate-600', 'hover:bg-slate-100');
+            activeBtn.classList.add('bg-slate-800', 'text-white');
+
+            renderTransactionList();
+        }
+
+        // Get Filtered Transactions by Month
+        function getMonthFilteredTransactions() {
+            if (currentMonthFilter === 'ALL') return transactions;
+            return transactions.filter(tx => tx.date.startsWith(currentMonthFilter));
+        }
+
+        // Render Summary, Chart, and List
+        function renderAll() {
+            renderSummary();
+            renderChart();
+            renderTransactionList();
+        }
+
+        // Format Currency
+        function formatMoney(num) {
+            return num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // Render Sticky Note Totals
+        function renderSummary() {
+            const scoped = getMonthFilteredTransactions();
+            let income = 0;
+            let expense = 0;
+            let incCount = 0;
+            let expCount = 0;
+
+            scoped.forEach(tx => {
+                if (tx.type === 'income') {
+                    income += tx.amount;
+                    incCount++;
+                } else {
+                    expense += tx.amount;
+                    expCount++;
+                }
+            });
+
+            const balance = income - expense;
+
+            document.getElementById('total-balance').textContent = `${balance < 0 ? '-' : ''}฿${formatMoney(Math.abs(balance))}`;
+            document.getElementById('total-income').textContent = `+฿${formatMoney(income)}`;
+            document.getElementById('total-expense').textContent = `-฿${formatMoney(expense)}`;
+
+            document.getElementById('income-count').textContent = `${incCount} รายการรับเข้า`;
+            document.getElementById('expense-count').textContent = `${expCount} รายการใช้จ่าย`;
+
+            // Dynamic Handwritten Note on Balance Sticky Note
+            const balanceNote = document.getElementById('balance-note');
+            if (balance > 0 && income > 0) {
+                const saveRate = Math.round((balance / income) * 100);
+                balanceNote.textContent = `ยอดเยี่ยม! เหลือเก็บ ${saveRate}% ของรายรับ ✨`;
+            } else if (balance < 0) {
+                balanceNote.textContent = `อุ๊ย! รายจ่ายเกินรายรับแล้ว ระวังหน่อยนะ 💦`;
+            } else {
+                balanceNote.textContent = `จดบันทึกทุกวัน มีเงินออมแน่นอน!`;
+            }
+        }
+
+        // Render Doughnut Chart on Graph Paper
+        function renderChart() {
+            const scoped = getMonthFilteredTransactions().filter(tx => tx.type === 'expense');
+            const canvas = document.getElementById('expenseChart');
+            const emptyMsg = document.getElementById('empty-chart-msg');
+
+            if (scoped.length === 0) {
+                canvas.classList.add('hidden');
+                emptyMsg.classList.remove('hidden');
+                if (expenseChartInstance) {
+                    expenseChartInstance.destroy();
+                    expenseChartInstance = null;
+                }
+                return;
+            }
+
+            canvas.classList.remove('hidden');
+            emptyMsg.classList.add('hidden');
+
+            // Aggregate by category
+            const totalsByCat = {};
+            scoped.forEach(tx => {
+                totalsByCat[tx.category] = (totalsByCat[tx.category] || 0) + tx.amount;
+            });
+
+            const labels = [];
+            const data = [];
+            const colors = [];
+
+            Object.keys(totalsByCat).forEach(catId => {
+                const info = getCategoryInfo('expense', catId);
+                labels.push(info.label);
+                data.push(totalsByCat[catId]);
+                colors.push(info.color);
+            });
+
+            if (expenseChartInstance) {
+                expenseChartInstance.destroy();
+            }
+
+            expenseChartInstance = new Chart(canvas, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors,
+                        borderColor: '#ffffff',
+                        borderWidth: 3,
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '58%',
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                font: { family: "'Prompt', sans-serif", size: 11 },
+                                boxWidth: 12,
+                                padding: 10,
+                                color: '#334155'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    return ` ฿${formatMoney(ctx.parsed)}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Render Ruled Paper Entries List
+        function renderTransactionList() {
+            const container = document.getElementById('transaction-list');
+            const emptyState = document.getElementById('empty-state');
+
+            let list = getMonthFilteredTransactions();
+
+            if (currentFilterType !== 'all') {
+                list = list.filter(tx => tx.type === currentFilterType);
+            }
+
+            if (searchQuery) {
+                list = list.filter(tx => 
+                    tx.title.toLowerCase().includes(searchQuery) ||
+                    (tx.note && tx.note.toLowerCase().includes(searchQuery))
+                );
+            }
+
+            // Sort newest date first
+            list.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (list.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            container.innerHTML = list.map(tx => {
+                const catInfo = getCategoryInfo(tx.type, tx.category);
+                const isIncome = tx.type === 'income';
+                const formattedDate = new Date(tx.date + 'T00:00:00').toLocaleDateString('th-TH', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: '2-digit'
+                });
+
+                return `
+                    <article class="group bg-white/90 hover:bg-white rounded-xl p-4 border border-slate-200/90 shadow-xs hover:shadow-md transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative">
+                        <!-- Left Color Bookmark Strip -->
+                        <div class="absolute left-0 top-3 bottom-3 w-1.5 rounded-r-full ${isIncome ? 'bg-emerald-400' : 'bg-rose-400'}"></div>
+
+                        <div class="pl-2.5 flex-1">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                                    ${catInfo.label}
+                                </span>
+                                <span class="font-hand text-lg text-slate-400">${formattedDate}</span>
+                            </div>
+                            <h3 class="text-base font-semibold text-slate-800 mt-1">${escapeHTML(tx.title)}</h3>
+                            ${tx.note ? `
+                                <p class="font-hand text-xl text-slate-600 mt-0.5 flex items-center gap-1">
+                                    <span class="text-amber-500">✎</span>
+                                    <span>"${escapeHTML(tx.note)}"</span>
+                                </p>
+                            ` : ''}
+                        </div>
+
+                        <div class="flex items-center justify-between sm:justify-end gap-4 pl-2.5 sm:pl-0 border-t sm:border-t-0 pt-2 sm:pt-0 border-dashed border-slate-200">
+                            <span class="text-lg font-bold tracking-tight ${isIncome ? 'text-emerald-600' : 'text-rose-500'}">
+                                ${isIncome ? '+' : '-'}฿${formatMoney(tx.amount)}
+                            </span>
+                            <button onclick="deleteTransaction('${tx.id}')" title="ลบรายการนี้"
+                                class="p-2 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition cursor-pointer" aria-label="Delete item">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[tag]));
+        }
+
+        // Custom Sticky-Note Toast Notification
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgColors = {
+                success: 'bg-[#dcfce7] border-emerald-300 text-emerald-900',
+                warning: 'bg-[#fef9c3] border-amber-300 text-amber-900',
+                info: 'bg-[#fce7f3] border-rose-300 text-rose-900'
+            };
+
+            toast.className = `pointer-events-auto px-4 py-3 rounded-xl border-2 shadow-lg font-medium text-sm flex items-center gap-2 transform transition-all duration-300 translate-x-10 opacity-0 ${bgColors[type] || bgColors.info}`;
+            toast.innerHTML = `<span>${message}</span>`;
+            
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-x-10', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('translate-x-10', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Modal Controls
+        function openResetModal() {
+            const modal = document.getElementById('reset-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeResetModal() {
+            const modal = document.getElementById('reset-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function confirmResetData() {
+            transactions = [];
+            saveTransactions();
+            updateMonthDropdown();
+            renderAll();
+            closeResetModal();
+            showToast('ล้างหน้าสมุดเรียบร้อย เริ่มต้นจดใหม่ได้เลย! ✨', 'warning');
+        }
+
+        // Start App
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
